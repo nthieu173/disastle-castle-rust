@@ -10,6 +10,7 @@ use std::{
 
 type Result<T> = result::Result<T, CastleError>;
 
+#[derive(Clone)]
 pub struct Castle {
     rooms: HashMap<Pos, Box<dyn Room>>,
 }
@@ -51,17 +52,18 @@ impl Castle {
         // Because we count all links twice, we need to divide by 2
         (diamond / 2, cross / 2, moon / 2, any / 2)
     }
-    pub fn place_room(&mut self, room: Box<dyn Room>, pos: Pos) -> Result<()> {
+    pub fn place_room(&self, room: Box<dyn Room>, pos: Pos) -> Result<Castle> {
         if self.rooms.contains_key(&pos) {
             return Err(CastleError::TakenPosition);
         }
         if !self.can_place_room(room.as_ref(), pos) {
             return Err(CastleError::InvalidConnection);
         }
-        self.rooms.insert(pos, room);
-        Ok(())
+        let mut castle = self.clone();
+        castle.rooms.insert(pos, room);
+        Ok(castle)
     }
-    pub fn move_room(&mut self, from: Pos, to: Pos) -> Result<()> {
+    pub fn move_room(&self, from: Pos, to: Pos) -> Result<Castle> {
         if from == to {
             Err(CastleError::InvalidPosition)
         } else if let Some(room) = self.rooms.get(&from) {
@@ -74,42 +76,37 @@ impl Castle {
             if !self.can_place_room(room.as_ref(), to) {
                 return Err(CastleError::InvalidConnection);
             }
-            let room = self.rooms.remove(&from).unwrap();
-            self.rooms.insert(to, room);
-            Ok(())
+            let mut castle = self.clone();
+            let room = castle.rooms.remove(&from).unwrap();
+            castle.rooms.insert(to, room);
+            Ok(castle)
         } else {
             Err(CastleError::EmptyPosition)
         }
     }
-    pub fn swap_room(&mut self, pos1: Pos, pos2: Pos) -> Result<()> {
+    pub fn swap_room(&self, pos1: Pos, pos2: Pos) -> Result<Castle> {
         if pos1 == pos2 {
             Err(CastleError::InvalidPosition)
-        } else if let Some(room1) = self.rooms.remove(&pos1) {
-            if let Some(room2) = self.rooms.remove(&pos2) {
-                // Checking valid swap for room1
-                if !self.can_place_room(room1.as_ref(), pos2) {
-                    self.rooms.insert(pos1, room1);
-                    self.rooms.insert(pos2, room2);
-                    return Err(CastleError::InvalidConnection);
-                }
-                // Checking valid swap for room2
-                if !self.can_place_room(room2.as_ref(), pos1) {
-                    self.rooms.insert(pos1, room1);
-                    self.rooms.insert(pos2, room2);
-                    return Err(CastleError::InvalidConnection);
-                }
-                self.rooms.insert(pos2, room1);
-                self.rooms.insert(pos1, room2);
-                Ok(())
-            } else {
-                self.rooms.insert(pos1, room1);
-                Err(CastleError::EmptyPosition)
+        } else if self.rooms.contains_key(&pos1) && self.rooms.contains_key(&pos2) {
+            let mut castle = self.clone();
+            let room1 = castle.rooms.remove(&pos1).unwrap();
+            let room2 = castle.rooms.remove(&pos1).unwrap();
+            // Checking valid swap for room1
+            if !castle.can_place_room(room1.as_ref(), pos2) {
+                return Err(CastleError::InvalidConnection);
             }
+            // Checking valid swap for room2
+            if !castle.can_place_room(room2.as_ref(), pos1) {
+                return Err(CastleError::InvalidConnection);
+            }
+            castle.rooms.insert(pos2, room1);
+            castle.rooms.insert(pos1, room2);
+            Ok(castle)
         } else {
             Err(CastleError::EmptyPosition)
         }
     }
-    pub fn discard_room(&mut self, pos: Pos) -> Result<Box<dyn Room>> {
+    pub fn discard_room(&self, pos: Pos) -> Result<(Castle, Box<dyn Room>)> {
         if !self.rooms.contains_key(&pos) {
             return Err(CastleError::EmptyPosition);
         }
@@ -123,8 +120,9 @@ impl Castle {
             .collect();
         if outer_pos.len() > 0 {
             if let Some(_) = outer_pos.iter().find(|p| ***p == pos) {
-                let room = self.rooms.remove(&pos).unwrap();
-                return Ok(room);
+                let mut castle = self.clone();
+                let room = castle.rooms.remove(&pos).unwrap();
+                return Ok((castle, room));
             } else {
                 return Err(CastleError::NotOuterRoom);
             }
@@ -134,8 +132,9 @@ impl Castle {
             .filter(|p| self.room_num_connected(**p).unwrap() < 2)
             .find(|p| **p == pos)
         {
-            let room = self.rooms.remove(&pos).unwrap();
-            return Ok(room);
+            let mut castle = self.clone();
+            let room = castle.rooms.remove(&pos).unwrap();
+            return Ok((castle, room));
         }
         Err(CastleError::NotOuterRoom)
     }
@@ -173,6 +172,31 @@ impl Castle {
             }
         }
         possible
+    }
+    pub fn possible_discards(&self) -> Vec<Pos> {
+        if self.is_lost() {
+            return Vec::new();
+        }
+        let mut possible = Vec::new();
+        if self.rooms.len() == 1 {
+            possible.push(*self.rooms.keys().next().unwrap());
+            return possible;
+        }
+        for (pos, room) in self.rooms.iter() {
+            if self.room_is_outer(*pos).unwrap() && !room.is_throne() {
+                possible.push(*pos);
+            }
+        }
+        if possible.len() > 0 {
+            possible
+        } else {
+            for (pos, room) in self.rooms.iter() {
+                if self.room_num_connected(*pos).unwrap() < 2 && !room.is_throne() {
+                    possible.push(*pos);
+                }
+            }
+            return possible;
+        }
     }
 }
 
