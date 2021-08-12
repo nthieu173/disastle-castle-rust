@@ -1,6 +1,7 @@
 use super::Connection;
 use super::Room;
 
+#[derive(Clone)]
 pub struct SimpleRoom {
     throne: bool,
     name: String,
@@ -20,6 +21,11 @@ impl Room for SimpleRoom {
     }
     fn get_rotation<'a>(&'a self) -> &'a u16 {
         &self.rotation
+    }
+    fn rotate<'a>(&'a self, rotation: u16) -> Box<dyn Room> {
+        let mut room = self.clone();
+        room.rotation = rotation;
+        Box::new(room)
     }
 }
 
