@@ -51,6 +51,10 @@ impl Castle {
                 + min(0, moon_damage - moon_link)
                 - any_link,
         );
+        if castle.damage as usize >= castle.rooms.len() {
+            castle.damage -= castle.rooms.len() as u8;
+            castle.rooms = HashMap::new();
+        }
         castle
     }
     pub fn get_damage(&self) -> u8 {
