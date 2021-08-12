@@ -53,6 +53,9 @@ impl Castle {
         );
         castle
     }
+    pub fn get_damage(&self) -> u8 {
+        self.damage
+    }
 }
 
 impl Castle {
