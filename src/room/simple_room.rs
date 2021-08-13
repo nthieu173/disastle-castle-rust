@@ -5,6 +5,7 @@ use super::Room;
 pub struct SimpleRoom {
     throne: bool,
     name: String,
+    treasure: u8,
     rotation: u16,
     connections: [Connection; 4],
 }
@@ -15,6 +16,9 @@ impl Room for SimpleRoom {
     }
     fn get_name<'a>(&'a self) -> &'a str {
         &self.name
+    }
+    fn get_treasure<'a>(&'a self) -> &'a u8 {
+        &self.treasure
     }
     fn get_original_connections<'a>(&'a self) -> &'a [Connection; 4] {
         &self.connections
@@ -33,6 +37,7 @@ impl SimpleRoom {
     pub fn from_room(r: &dyn Room) -> SimpleRoom {
         SimpleRoom {
             throne: *r.is_throne(),
+            treasure: *r.get_treasure(),
             name: r.get_name().to_string(),
             rotation: *r.get_rotation(),
             connections: r.get_connections(),

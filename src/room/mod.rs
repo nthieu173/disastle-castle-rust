@@ -10,6 +10,7 @@ pub type Pos = (i8, i8);
 pub trait Room: RoomClone {
     fn is_throne(&self) -> &bool;
     fn get_name(&self) -> &str;
+    fn get_treasure(&self) -> &u8;
     fn get_original_connections(&self) -> &[Connection; 4];
     fn get_rotation(&self) -> &u16;
     fn rotate(&self, rotation: u16) -> Box<dyn Room>;
