@@ -60,6 +60,36 @@ impl Castle {
     pub fn get_damage(&self) -> u8 {
         self.damage
     }
+    pub fn get_links(&self) -> (u8, u8, u8, u8) {
+        let mut diamond = 0;
+        let mut cross = 0;
+        let mut moon = 0;
+        let mut any = 0;
+        for (pos, room) in self.rooms.iter() {
+            for (i, con_pos) in connecting(*pos).iter().enumerate() {
+                if let Some(con_room) = self.rooms.get(&con_pos) {
+                    match room.get_connections()[i].link(&con_room.get_connections()[(i + 2) % 4]) {
+                        Connection::Any => any += 1,
+                        Connection::Diamond(_) => diamond += 1,
+                        Connection::Cross(_) => cross += 1,
+                        Connection::Moon(_) => moon += 1,
+                        Connection::None => panic!("Castle has incorrectly placed room."),
+                    }
+                }
+            }
+        }
+        // Because we count all links twice, we need to divide by 2
+        (diamond / 2, cross / 2, moon / 2, any / 2)
+    }
+    pub fn get_treasure(&self) -> u8 {
+        let mut treasure = 0;
+        for (pos, room) in self.rooms.iter() {
+            if *room.get_treasure() > 0 && self.room_is_powered(*pos).unwrap() {
+                treasure += room.get_treasure();
+            }
+        }
+        treasure
+    }
 }
 
 impl Castle {
@@ -250,27 +280,6 @@ impl Castle {
 }
 
 impl Castle {
-    fn get_links(&self) -> (u8, u8, u8, u8) {
-        let mut diamond = 0;
-        let mut cross = 0;
-        let mut moon = 0;
-        let mut any = 0;
-        for (pos, room) in self.rooms.iter() {
-            for (i, con_pos) in connecting(*pos).iter().enumerate() {
-                if let Some(con_room) = self.rooms.get(&con_pos) {
-                    match room.get_connections()[i].link(&con_room.get_connections()[(i + 2) % 4]) {
-                        Connection::Any => any += 1,
-                        Connection::Diamond => diamond += 1,
-                        Connection::Cross => cross += 1,
-                        Connection::Moon => moon += 1,
-                        Connection::None => panic!("Castle has incorrectly placed room."),
-                    }
-                }
-            }
-        }
-        // Because we count all links twice, we need to divide by 2
-        (diamond / 2, cross / 2, moon / 2, any / 2)
-    }
     fn placable_positions(&self, room: &dyn Room) -> Vec<Pos> {
         let mut placable = HashSet::new();
         for pos in self.rooms.keys() {
@@ -322,6 +331,23 @@ impl Castle {
                 }
             }
             Ok(count)
+        } else {
+            Err(CastleError::EmptyPosition)
+        }
+    }
+    fn room_is_powered(&self, pos: Pos) -> Result<bool> {
+        if let Some(room) = self.rooms.get(&pos) {
+            let mut other_connections = [Connection::None; 4];
+            for (i, con_pos) in connecting(pos).iter().enumerate() {
+                if let Some(con_room) = self.rooms.get(&con_pos) {
+                    other_connections[i] = con_room.get_connections()[(i + 2) % 4];
+                }
+            }
+            Ok(room
+                .get_connections()
+                .iter()
+                .enumerate()
+                .all(|(i, c)| !c.power() || c.link(&other_connections[i]).power()))
         } else {
             Err(CastleError::EmptyPosition)
         }
