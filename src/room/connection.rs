@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use std::hash::Hash;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Connection {
     None,
     Any,

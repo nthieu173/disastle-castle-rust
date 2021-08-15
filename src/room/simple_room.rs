@@ -1,7 +1,9 @@
 use super::Connection;
 use super::Room;
 
-#[derive(Clone, PartialEq, Eq)]
+use std::hash::Hash;
+
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SimpleRoom {
     throne: bool,
     name: String,

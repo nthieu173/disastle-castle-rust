@@ -3,7 +3,11 @@ pub mod simple_room;
 
 use connection::Connection;
 
-use std::{clone::Clone, convert::TryInto};
+use std::{
+    clone::Clone,
+    convert::TryInto,
+    hash::{Hash, Hasher},
+};
 
 pub type Pos = (i8, i8);
 
@@ -24,6 +28,14 @@ pub trait Room: RoomClone {
             .copied()
             .collect();
         connections.try_into().unwrap()
+    }
+}
+
+impl Hash for dyn Room {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.get_name().hash(state);
+        self.get_treasure().hash(state);
+        self.get_original_connections().hash(state);
     }
 }
 
