@@ -1,7 +1,7 @@
 use super::Connection;
 use super::Room;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SimpleRoom {
     throne: bool,
     name: String,

@@ -27,6 +27,20 @@ pub trait Room: RoomClone {
     }
 }
 
+impl PartialEq for dyn Room {
+    fn eq(&self, other: &dyn Room) -> bool {
+        self.is_throne() == other.is_throne()
+            && self.get_name() == other.get_name()
+            && self.get_treasure() == other.get_treasure()
+            && self
+                .get_original_connections()
+                .iter()
+                .eq(other.get_original_connections().iter())
+    }
+}
+
+impl Eq for dyn Room {}
+
 pub trait RoomClone {
     fn clone_box(&self) -> Box<dyn Room>;
 }
