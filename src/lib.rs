@@ -34,13 +34,6 @@ impl Castle {
     pub fn is_lost(&self) -> bool {
         self.rooms.values().all(|v| !v.is_throne())
     }
-    pub fn view(&self) -> HashMap<Pos, SimpleRoom> {
-        let mut result = HashMap::new();
-        for (pos, room) in self.rooms.iter() {
-            result.insert(*pos, SimpleRoom::from_room(room.as_ref()));
-        }
-        result
-    }
     pub fn deal_damage(&self, diamond_damage: u8, cross_damage: u8, moon_damage: u8) -> Castle {
         let (diamond_link, cross_link, moon_link, any_link) = self.get_links();
         let mut castle = self.clone();
@@ -56,6 +49,9 @@ impl Castle {
             castle.rooms = HashMap::new();
         }
         castle
+    }
+    pub fn get_rooms(&self) -> &HashMap<Pos, Box<dyn Room>> {
+        &self.rooms
     }
     pub fn get_damage(&self) -> u8 {
         self.damage
