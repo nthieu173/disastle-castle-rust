@@ -7,6 +7,7 @@ pub use room::{connection::Connection, simple_room::SimpleRoom, Pos, Room};
 use std::{
     cmp::min,
     collections::{HashMap, HashSet},
+    hash::{Hash, Hasher},
     result,
 };
 
@@ -17,6 +18,35 @@ pub struct Castle {
     rooms: HashMap<Pos, Box<dyn Room>>,
     damage: u8,
 }
+
+impl Hash for Castle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        for (pos, room) in self.rooms.iter() {
+            (pos, room, room.get_rotation()).hash(state);
+        }
+        self.damage.hash(state);
+    }
+}
+
+impl PartialEq for Castle {
+    fn eq(&self, other: &Castle) -> bool {
+        if self.damage != other.damage {
+            return false;
+        }
+        for (pos, room) in self.rooms.iter() {
+            if let Some(other_room) = other.rooms.get(pos) {
+                if room != other_room || room.get_rotation() != other_room.get_rotation() {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl Eq for Castle {}
 
 pub enum Action {
     Place(usize, Pos),
