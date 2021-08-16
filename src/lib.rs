@@ -52,6 +52,7 @@ impl PartialEq for Castle {
 
 impl Eq for Castle {}
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Action {
     Place(usize, Pos),
     Move(Pos, Pos),
