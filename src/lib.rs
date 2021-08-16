@@ -21,7 +21,11 @@ pub struct Castle {
 
 impl Hash for Castle {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        for (pos, room) in self.rooms.iter() {
+        // Sort the positions to get a stable Hash
+        let mut positions: Vec<&Pos> = self.rooms.keys().collect();
+        positions.sort_unstable();
+        for pos in positions {
+            let room = self.rooms.get(pos).unwrap();
             (pos, room, room.get_rotation()).hash(state);
         }
         self.damage.hash(state);
