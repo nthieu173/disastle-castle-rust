@@ -1,9 +1,10 @@
 use super::Connection;
 use super::Room;
 
+use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub struct SimpleRoom {
     throne: bool,
     name: String,
