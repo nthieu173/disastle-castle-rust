@@ -70,14 +70,14 @@ impl Castle {
         self.rooms.values().all(|v| !v.is_throne())
     }
     pub fn deal_damage(&self, diamond_damage: u8, cross_damage: u8, moon_damage: u8) -> Castle {
-        let (diamond_link, cross_link, moon_link, any_link) = self.get_links();
+        let (diamond_link, cross_link, moon_link, wild_link) = self.get_links();
         let mut castle = self.clone();
         castle.damage = min(
             0,
             min(0, diamond_damage - diamond_link)
                 + min(0, cross_damage - cross_link)
                 + min(0, moon_damage - moon_link)
-                - any_link,
+                - wild_link,
         );
         if castle.damage as usize >= castle.rooms.len() {
             castle.damage -= castle.rooms.len() as u8;
@@ -95,12 +95,12 @@ impl Castle {
         let mut diamond = 0;
         let mut cross = 0;
         let mut moon = 0;
-        let mut any = 0;
+        let mut wild = 0;
         for (pos, room) in self.rooms.iter() {
             for (i, con_pos) in connecting(*pos).iter().enumerate() {
                 if let Some(con_room) = self.rooms.get(&con_pos) {
                     match room.get_connections()[i].link(&con_room.get_connections()[(i + 2) % 4]) {
-                        Connection::Any => any += 1,
+                        Connection::Wild => wild += 1,
                         Connection::Diamond(_) => diamond += 1,
                         Connection::Cross(_) => cross += 1,
                         Connection::Moon(_) => moon += 1,
@@ -110,7 +110,7 @@ impl Castle {
             }
         }
         // Because we count all links twice, we need to divide by 2
-        (diamond / 2, cross / 2, moon / 2, any / 2)
+        (diamond / 2, cross / 2, moon / 2, wild / 2)
     }
     pub fn get_treasure(&self) -> u8 {
         let mut treasure = 0;

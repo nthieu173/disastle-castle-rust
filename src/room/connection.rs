@@ -4,7 +4,7 @@ use std::hash::Hash;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Connection {
     None,
-    Any,
+    Wild,
     Diamond(bool),
     Cross(bool),
     Moon(bool),
@@ -22,13 +22,13 @@ impl Connection {
     */
     pub fn link(&self, other: &Connection) -> Connection {
         match (self, other) {
-            (Connection::Any, Connection::Any) => Connection::Any,
-            (Connection::Any, Connection::Diamond(_)) => Connection::Diamond(false),
-            (Connection::Any, Connection::Cross(_)) => Connection::Cross(false),
-            (Connection::Any, Connection::Moon(_)) => Connection::Moon(false),
-            (Connection::Diamond(power), Connection::Any) => Connection::Diamond(*power),
-            (Connection::Cross(power), Connection::Any) => Connection::Cross(*power),
-            (Connection::Moon(power), Connection::Any) => Connection::Moon(*power),
+            (Connection::Wild, Connection::Wild) => Connection::Wild,
+            (Connection::Wild, Connection::Diamond(_)) => Connection::Diamond(false),
+            (Connection::Wild, Connection::Cross(_)) => Connection::Cross(false),
+            (Connection::Wild, Connection::Moon(_)) => Connection::Moon(false),
+            (Connection::Diamond(power), Connection::Wild) => Connection::Diamond(*power),
+            (Connection::Cross(power), Connection::Wild) => Connection::Cross(*power),
+            (Connection::Moon(power), Connection::Wild) => Connection::Moon(*power),
             (Connection::Cross(power), Connection::Cross(_)) => Connection::Cross(*power),
             (Connection::Diamond(power), Connection::Diamond(_)) => Connection::Diamond(*power),
             (Connection::Moon(power), Connection::Moon(_)) => Connection::Moon(*power),
