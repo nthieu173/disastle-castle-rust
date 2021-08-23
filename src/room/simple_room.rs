@@ -46,4 +46,7 @@ impl SimpleRoom {
             connections: r.get_connections(),
         }
     }
+    pub fn to_room(&self) -> Box<dyn Room> {
+        Box::new(self.clone())
+    }
 }
