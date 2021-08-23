@@ -171,7 +171,7 @@ impl Castle {
         } else if self.rooms.contains_key(&pos1) && self.rooms.contains_key(&pos2) {
             let mut castle = self.clone();
             let room1 = castle.rooms.remove(&pos1).unwrap();
-            let room2 = castle.rooms.remove(&pos1).unwrap();
+            let room2 = castle.rooms.remove(&pos2).unwrap();
             // Checking valid swap for room1
             if !castle.can_place_room(room1.as_ref(), pos2) {
                 return Err(CastleError::InvalidConnection);
