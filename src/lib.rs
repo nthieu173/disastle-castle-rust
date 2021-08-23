@@ -315,7 +315,7 @@ impl Castle {
         let mut placable = HashSet::new();
         for pos in self.rooms.keys() {
             for con_pos in connecting(*pos) {
-                if !self.rooms.contains_key(&pos) && self.can_place_room(room, con_pos) {
+                if !self.rooms.contains_key(&con_pos) && self.can_place_room(room, con_pos) {
                     placable.insert(con_pos);
                 }
             }
@@ -392,8 +392,129 @@ fn connecting(pos: Pos) -> [Pos; 4] {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use ron;
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn test_new() {
+        let throne: SimpleRoom = ron::from_str(
+            "SimpleRoom(
+                throne: true,
+                name: \"Throne Room (White)\",
+                treasure: 0,
+                rotation: 0,
+                connections: (Wild, Wild, Wild, Wild)
+            )",
+        )
+        .unwrap();
+        Castle::new(Box::new(throne));
+    }
+
+    #[test]
+    fn test_possible_actions() {
+        let throne: SimpleRoom = ron::from_str(
+            "SimpleRoom(
+                throne: true,
+                name: \"Throne Room (White)\",
+                treasure: 0,
+                rotation: 0,
+                connections: (Wild, Wild, Wild, Wild)
+            )",
+        )
+        .unwrap();
+        let castle = Castle::new(Box::new(throne));
+        let shop: Vec<SimpleRoom> = ron::from_str(
+            "[
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (None, None, None, Cross(false))
+            ),
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (None, Diamond(false), None, None)
+            ),
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (None, None, Moon(false), None)
+            ),
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (Cross(false), None, None, None)
+            ),
+        ]",
+        )
+        .unwrap();
+        let shop: Vec<Box<dyn Room>> = shop.into_iter().map(|r: SimpleRoom| r.to_room()).collect();
+        let actions = castle.possible_actions(&shop);
+        assert_eq!(actions.len(), 4);
+    }
+
+    #[test]
+    fn test_place_action() {
+        let throne: SimpleRoom = ron::from_str(
+            "SimpleRoom(
+                throne: true,
+                name: \"Throne Room (White)\",
+                treasure: 0,
+                rotation: 0,
+                connections: (Wild, Wild, Wild, Wild)
+            )",
+        )
+        .unwrap();
+        let castle = Castle::new(Box::new(throne));
+        let shop: Vec<SimpleRoom> = ron::from_str(
+            "[
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (None, None, None, Cross(false))
+            ),
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (None, Diamond(false), None, None)
+            ),
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (None, None, Moon(false), None)
+            ),
+            SimpleRoom(
+                throne: false,
+                treasure: 1,
+                name: \"Small Vault\",
+                rotation: 0,
+                connections: (Cross(false), None, None, None)
+            ),
+        ]",
+        )
+        .unwrap();
+        let shop: Vec<Box<dyn Room>> = shop.into_iter().map(|r: SimpleRoom| r.to_room()).collect();
+        let actions = castle.possible_actions(&shop);
+        let sample_action = actions[0];
+        let result = match sample_action {
+            Action::Place(index, pos) => castle.place_room(shop[index].clone(), pos),
+            _ => unreachable!(),
+        };
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().get_rooms().len(), 2)
     }
 }
