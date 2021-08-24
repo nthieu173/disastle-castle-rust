@@ -99,12 +99,18 @@ impl Castle {
         for (pos, room) in self.rooms.iter() {
             for (i, con_pos) in connecting(*pos).iter().enumerate() {
                 if let Some(con_room) = self.rooms.get(&con_pos) {
-                    match room.get_connections()[i].link(&con_room.get_connections()[(i + 2) % 4]) {
-                        Connection::Wild => wild += 1,
-                        Connection::Diamond(_) => diamond += 1,
-                        Connection::Cross(_) => cross += 1,
-                        Connection::Moon(_) => moon += 1,
-                        Connection::None => panic!("Castle has incorrectly placed room."),
+                    if let Ok(link) =
+                        room.get_connections()[i].link(&con_room.get_connections()[(i + 2) % 4])
+                    {
+                        match link {
+                            Connection::Wild => wild += 1,
+                            Connection::Diamond(_) => diamond += 1,
+                            Connection::Cross(_) => cross += 1,
+                            Connection::Moon(_) => moon += 1,
+                            Connection::None => (),
+                        }
+                    } else {
+                        panic!("Castle has incorrectly placed room");
                     }
                 }
             }
@@ -378,7 +384,7 @@ impl Castle {
                 .get_connections()
                 .iter()
                 .enumerate()
-                .all(|(i, c)| !c.power() || c.link(&other_connections[i]).power()))
+                .all(|(i, c)| !c.power() || c.link(&other_connections[i]).unwrap().power()))
         } else {
             Err(CastleError::EmptyPosition)
         }

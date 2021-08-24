@@ -1,3 +1,4 @@
+use crate::error::CastleError;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 
@@ -20,19 +21,20 @@ impl Connection {
     /*
     Tells the powered state of THIS connection if connected to other.
     */
-    pub fn link(&self, other: &Connection) -> Connection {
+    pub fn link(&self, other: &Connection) -> Result<Connection, CastleError> {
         match (self, other) {
-            (Connection::Wild, Connection::Wild) => Connection::Wild,
-            (Connection::Wild, Connection::Diamond(_)) => Connection::Diamond(false),
-            (Connection::Wild, Connection::Cross(_)) => Connection::Cross(false),
-            (Connection::Wild, Connection::Moon(_)) => Connection::Moon(false),
-            (Connection::Diamond(power), Connection::Wild) => Connection::Diamond(*power),
-            (Connection::Cross(power), Connection::Wild) => Connection::Cross(*power),
-            (Connection::Moon(power), Connection::Wild) => Connection::Moon(*power),
-            (Connection::Cross(power), Connection::Cross(_)) => Connection::Cross(*power),
-            (Connection::Diamond(power), Connection::Diamond(_)) => Connection::Diamond(*power),
-            (Connection::Moon(power), Connection::Moon(_)) => Connection::Moon(*power),
-            (_, _) => Connection::None,
+            (Connection::Wild, Connection::Wild) => Ok(Connection::Wild),
+            (Connection::Wild, Connection::Diamond(_)) => Ok(Connection::Diamond(false)),
+            (Connection::Wild, Connection::Cross(_)) => Ok(Connection::Cross(false)),
+            (Connection::Wild, Connection::Moon(_)) => Ok(Connection::Moon(false)),
+            (Connection::Diamond(power), Connection::Wild) => Ok(Connection::Diamond(*power)),
+            (Connection::Cross(power), Connection::Wild) => Ok(Connection::Cross(*power)),
+            (Connection::Moon(power), Connection::Wild) => Ok(Connection::Moon(*power)),
+            (Connection::Cross(power), Connection::Cross(_)) => Ok(Connection::Cross(*power)),
+            (Connection::Diamond(power), Connection::Diamond(_)) => Ok(Connection::Diamond(*power)),
+            (Connection::Moon(power), Connection::Moon(_)) => Ok(Connection::Moon(*power)),
+            (Connection::None, Connection::None) => Ok(Connection::None),
+            (_, _) => Err(CastleError::InvalidConnection),
         }
     }
     pub fn power(&self) -> bool {
