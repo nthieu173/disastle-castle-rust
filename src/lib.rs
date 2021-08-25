@@ -5,7 +5,6 @@ pub use error::CastleError;
 pub use room::{connection::Connection, simple_room::SimpleRoom, Pos, Room};
 
 use std::{
-    cmp::min,
     collections::{HashMap, HashSet},
     hash::{Hash, Hasher},
     result,
@@ -13,7 +12,7 @@ use std::{
 
 type Result<T> = result::Result<T, CastleError>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Castle {
     rooms: HashMap<Pos, Box<dyn Room>>,
     damage: u8,
@@ -52,7 +51,7 @@ impl PartialEq for Castle {
 
 impl Eq for Castle {}
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Action {
     Place(usize, Pos),
     Move(Pos, Pos),
@@ -67,18 +66,24 @@ impl Castle {
         Castle { rooms, damage: 0 }
     }
     pub fn is_lost(&self) -> bool {
-        self.rooms.values().all(|v| !v.is_throne())
+        self.damage as usize >= self.rooms.values().len()
+            || self.rooms.values().all(|v| !v.is_throne())
     }
     pub fn deal_damage(&self, diamond_damage: u8, cross_damage: u8, moon_damage: u8) -> Castle {
         let (diamond_link, cross_link, moon_link, wild_link) = self.get_links();
         let mut castle = self.clone();
-        castle.damage = min(
-            0,
-            min(0, diamond_damage - diamond_link)
-                + min(0, cross_damage - cross_link)
-                + min(0, moon_damage - moon_link)
-                - wild_link,
-        );
+        if diamond_damage > diamond_link {
+            castle.damage += diamond_damage - diamond_link;
+        }
+        if cross_damage > cross_link {
+            castle.damage += cross_damage - cross_link;
+        }
+        if moon_damage > moon_link {
+            castle.damage += moon_damage - moon_link;
+        }
+        if castle.damage > wild_link {
+            castle.damage -= wild_link;
+        }
         if castle.damage as usize >= castle.rooms.len() {
             castle.damage -= castle.rooms.len() as u8;
             castle.rooms = HashMap::new();
@@ -150,18 +155,18 @@ impl Castle {
         }
         if from == to {
             Err(CastleError::InvalidPosition)
-        } else if let Some(room) = self.rooms.get(&from) {
+        } else if self.rooms.contains_key(&from) {
             if !self.room_is_outer(from).unwrap() {
                 return Err(CastleError::NotOuterRoom);
             }
             if self.rooms.contains_key(&to) {
                 return Err(CastleError::TakenPosition);
             }
-            if !self.can_place_room(room.as_ref(), to) {
-                return Err(CastleError::InvalidConnection);
-            }
             let mut castle = self.clone();
             let room = castle.rooms.remove(&from).unwrap();
+            if !castle.can_place_room(room.as_ref(), to) {
+                return Err(CastleError::InvalidConnection);
+            }
             castle.rooms.insert(to, room);
             Ok(castle)
         } else {
@@ -178,16 +183,20 @@ impl Castle {
             let mut castle = self.clone();
             let room1 = castle.rooms.remove(&pos1).unwrap();
             let room2 = castle.rooms.remove(&pos2).unwrap();
-            // Checking valid swap for room1
+
+            // Checking valid swap for room1 as if room2 was already swapped there.
+            castle.rooms.insert(pos1, room2);
             if !castle.can_place_room(room1.as_ref(), pos2) {
                 return Err(CastleError::InvalidConnection);
             }
-            // Checking valid swap for room2
+            let room2 = castle.rooms.remove(&pos1).unwrap();
+
+            castle.rooms.insert(pos2, room1);
+            // Checking valid swap for room2 as if room1 was already swapped there.
             if !castle.can_place_room(room2.as_ref(), pos1) {
                 return Err(CastleError::InvalidConnection);
             }
-            castle.rooms.insert(pos2, room1);
-            castle.rooms.insert(pos1, room2);
+            castle.rooms.insert(pos1, room2); // We passed both checks, so we can swap them.
             Ok(castle)
         } else {
             Err(CastleError::EmptyPosition)
@@ -212,6 +221,7 @@ impl Castle {
             if let Some(_) = outer_pos.iter().find(|p| ***p == pos) {
                 let mut castle = self.clone();
                 let room = castle.rooms.remove(&pos).unwrap();
+                castle.damage -= 1;
                 return Ok((castle, room));
             } else {
                 return Err(CastleError::NotOuterRoom);
@@ -224,6 +234,7 @@ impl Castle {
         {
             let mut castle = self.clone();
             let room = castle.rooms.remove(&pos).unwrap();
+            castle.damage -= 1;
             return Ok((castle, room));
         }
         Err(CastleError::NotOuterRoom)
@@ -251,6 +262,12 @@ impl Castle {
             )
             .collect()
     }
+    pub fn clear_rooms(&self) -> Castle {
+        let mut castle = self.clone();
+        castle.damage -= castle.rooms.len() as u8;
+        castle.rooms.clear();
+        castle
+    }
 }
 
 impl Castle {
@@ -265,11 +282,16 @@ impl Castle {
     }
     fn possible_moves(&self) -> Vec<(Pos, Pos)> {
         let mut possible = Vec::new();
-        for (from, room) in self.rooms.iter() {
+        let mut castle = self.clone();
+        for from in self.rooms.keys() {
             if self.room_is_outer(*from).unwrap() {
-                for to in self.placable_positions(room.as_ref()) {
-                    possible.push((*from, to));
+                let room = castle.rooms.remove(from).unwrap();
+                for to in castle.placable_positions(room.as_ref()) {
+                    if *from != to {
+                        possible.push((*from, to));
+                    }
                 }
+                castle.rooms.insert(*from, room);
             }
         }
         possible
@@ -374,17 +396,22 @@ impl Castle {
     }
     fn room_is_powered(&self, pos: Pos) -> Result<bool> {
         if let Some(room) = self.rooms.get(&pos) {
-            let mut other_connections = [Connection::None; 4];
+            let connections = room.get_connections();
             for (i, con_pos) in connecting(pos).iter().enumerate() {
-                if let Some(con_room) = self.rooms.get(&con_pos) {
-                    other_connections[i] = con_room.get_connections()[(i + 2) % 4];
+                if connections[i].power() {
+                    if let Some(con_room) = self.rooms.get(&con_pos) {
+                        if let Ok(link) =
+                            connections[i].link(&con_room.get_connections()[(i + 2) % 4])
+                        {
+                            if link.power() {
+                                continue;
+                            }
+                        }
+                    }
+                    return Ok(false);
                 }
             }
-            Ok(room
-                .get_connections()
-                .iter()
-                .enumerate()
-                .all(|(i, c)| !c.power() || c.link(&other_connections[i]).unwrap().power()))
+            Ok(true)
         } else {
             Err(CastleError::EmptyPosition)
         }
@@ -393,7 +420,7 @@ impl Castle {
 
 fn connecting(pos: Pos) -> [Pos; 4] {
     let (x, y) = pos;
-    [(x, y - 1), (x, y + 1), (x + 1, y), (x - 1, y)]
+    [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
 }
 
 #[cfg(test)]
@@ -515,12 +542,13 @@ mod tests {
         .unwrap();
         let shop: Vec<Box<dyn Room>> = shop.into_iter().map(|r: SimpleRoom| r.to_room()).collect();
         let actions = castle.possible_actions(&shop);
-        let sample_action = actions[0];
+        let sample_action = actions[1];
         let result = match sample_action {
             Action::Place(index, pos) => castle.place_room(shop[index].clone(), pos),
             _ => unreachable!(),
         };
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().get_rooms().len(), 2)
+        let new_castle = result.unwrap();
+        assert_eq!(new_castle.get_rooms().len(), 2);
     }
 }

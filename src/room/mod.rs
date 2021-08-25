@@ -6,6 +6,7 @@ use connection::Connection;
 use std::{
     clone::Clone,
     convert::TryInto,
+    fmt,
     hash::{Hash, Hasher},
 };
 
@@ -28,6 +29,15 @@ pub trait Room: RoomClone {
             .copied()
             .collect();
         connections.try_into().unwrap()
+    }
+}
+
+impl fmt::Debug for dyn Room {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Room")
+            .field("name", &self.get_name())
+            .field("connections", &self.get_connections())
+            .finish()
     }
 }
 
