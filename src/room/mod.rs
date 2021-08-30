@@ -1,27 +1,31 @@
 pub mod connection;
-pub mod simple_room;
 
 use connection::Connection;
+use serde::{Deserialize, Serialize};
 
-use std::{
-    clone::Clone,
-    convert::TryInto,
-    fmt,
-    hash::{Hash, Hasher},
-};
+use std::{clone::Clone, convert::TryInto, fmt, hash::Hash};
 
 pub type Pos = (i8, i8);
 
-pub trait Room: RoomClone {
-    fn is_throne(&self) -> &bool;
-    fn get_name(&self) -> &str;
-    fn get_treasure(&self) -> &u8;
-    fn get_original_connections(&self) -> &[Connection; 4];
-    fn get_rotation(&self) -> &u16;
-    fn rotate(&self, rotation: u16) -> Box<dyn Room>;
-    fn get_connections(&self) -> [Connection; 4] {
-        let connections = self.get_original_connections();
-        let rotation = ((self.get_rotation() % 360) / 90) * 90; // Floor to 90 degrees increments
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
+pub struct Room {
+    pub name: String,
+    pub throne: bool,
+    pub treasure: u8,
+    pub rotation: u16,
+    pub connections: [Connection; 4],
+}
+
+impl Room {
+    pub fn rotate(&self, rotation: u16) -> Room {
+        Room {
+            rotation,
+            ..self.clone()
+        }
+    }
+    pub fn get_rotated_connections(&self) -> [Connection; 4] {
+        let connections = self.connections;
+        let rotation = ((self.rotation % 360) / 90) * 90; // Floor to 90 degrees increments
         let rotate_num: usize = (rotation / 90).into();
         let connections: Vec<Connection> = connections[4 - rotate_num..]
             .iter()
@@ -32,52 +36,11 @@ pub trait Room: RoomClone {
     }
 }
 
-impl fmt::Debug for dyn Room {
+impl fmt::Display for Room {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Room")
-            .field("name", &self.get_name())
-            .field("connections", &self.get_connections())
+            .field("name", &self.name)
+            .field("connections", &self.get_rotated_connections())
             .finish()
-    }
-}
-
-impl Hash for dyn Room {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.get_name().hash(state);
-        self.get_treasure().hash(state);
-        self.get_original_connections().hash(state);
-    }
-}
-
-impl PartialEq for dyn Room {
-    fn eq(&self, other: &dyn Room) -> bool {
-        self.is_throne() == other.is_throne()
-            && self.get_name() == other.get_name()
-            && self.get_treasure() == other.get_treasure()
-            && self
-                .get_original_connections()
-                .iter()
-                .eq(other.get_original_connections().iter())
-    }
-}
-
-impl Eq for dyn Room {}
-
-pub trait RoomClone {
-    fn clone_box(&self) -> Box<dyn Room>;
-}
-
-impl<T> RoomClone for T
-where
-    T: 'static + Room + Clone,
-{
-    fn clone_box(&self) -> Box<dyn Room> {
-        Box::new(self.clone())
-    }
-}
-
-impl Clone for Box<dyn Room> {
-    fn clone(&self) -> Box<dyn Room> {
-        self.clone_box()
     }
 }
