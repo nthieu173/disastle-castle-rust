@@ -4,6 +4,7 @@ mod room;
 pub use error::CastleError;
 pub use room::{connection::Connection, Pos, Room};
 
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashSet},
     hash::Hash,
@@ -12,13 +13,13 @@ use std::{
 
 type Result<T> = result::Result<T, CastleError>;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct Castle {
     pub rooms: BTreeMap<Pos, Room>,
     pub damage: u8,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Action {
     Place(usize, Pos),
     Move(Pos, Pos),
