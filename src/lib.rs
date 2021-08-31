@@ -176,7 +176,7 @@ impl Castle {
         let outer_pos: Vec<&Pos> = self
             .rooms
             .keys()
-            .filter(|p| self.room_is_outer(**p).unwrap())
+            .filter(|p| !self.rooms[p].throne && self.room_is_outer(**p).unwrap())
             .collect();
         if outer_pos.len() > 0 {
             if self.room_is_outer(pos).unwrap() {
@@ -191,7 +191,7 @@ impl Castle {
         let nearly_outer_pos: Vec<&Pos> = self
             .rooms
             .keys()
-            .filter(|p| self.room_num_connected(**p).unwrap() <= 2)
+            .filter(|p| !self.rooms[p].throne && self.room_num_connected(**p).unwrap() <= 2)
             .collect();
         if nearly_outer_pos.len() > 0 {
             if self.room_num_connected(pos).unwrap() <= 2 {
