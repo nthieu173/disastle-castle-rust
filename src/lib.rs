@@ -179,7 +179,7 @@ impl Castle {
             .filter(|p| self.room_is_outer(**p).unwrap())
             .collect();
         if outer_pos.len() > 0 {
-            if let Some(_) = outer_pos.iter().find(|p| ***p == pos) {
+            if self.room_is_outer(pos).unwrap() {
                 let mut castle = self.clone();
                 let room = castle.rooms.remove(&pos).unwrap();
                 castle.damage -= 1;
@@ -187,18 +187,23 @@ impl Castle {
             } else {
                 return Err(CastleError::NotOuterRoom);
             }
-        } else if let Some(_) = self
+        }
+        let nearly_outer_pos: Vec<&Pos> = self
             .rooms
             .keys()
             .filter(|p| self.room_num_connected(**p).unwrap() <= 2)
-            .find(|p| **p == pos)
-        {
-            let mut castle = self.clone();
-            let room = castle.rooms.remove(&pos).unwrap();
-            castle.damage -= 1;
-            return Ok((castle, room));
+            .collect();
+        if nearly_outer_pos.len() > 0 {
+            if self.room_num_connected(pos).unwrap() <= 2 {
+                let mut castle = self.clone();
+                let room = castle.rooms.remove(&pos).unwrap();
+                castle.damage -= 1;
+                return Ok((castle, room));
+            } else {
+                return Err(CastleError::NotNearlyOuterRoom);
+            }
         }
-        Err(CastleError::NotOuterRoom)
+        panic!("Impossible! There are no ways to discard rooms!");
     }
     pub fn possible_actions(&self, shop: &Vec<Room>) -> Vec<Action> {
         if self.damage > 0 {
