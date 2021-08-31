@@ -5,50 +5,18 @@ pub use error::CastleError;
 pub use room::{connection::Connection, Pos, Room};
 
 use std::{
-    collections::{HashMap, HashSet},
-    hash::{Hash, Hasher},
+    collections::{BTreeMap, HashSet},
+    hash::Hash,
     result,
 };
 
 type Result<T> = result::Result<T, CastleError>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Castle {
-    rooms: HashMap<Pos, Room>,
-    damage: u8,
+    pub rooms: BTreeMap<Pos, Room>,
+    pub damage: u8,
 }
-
-impl Hash for Castle {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        // Sort the positions to get a stable Hash
-        let mut positions: Vec<&Pos> = self.rooms.keys().collect();
-        positions.sort_unstable();
-        for pos in positions {
-            self.rooms[pos].hash(state);
-        }
-        self.damage.hash(state);
-    }
-}
-
-impl PartialEq for Castle {
-    fn eq(&self, other: &Castle) -> bool {
-        if self.damage != other.damage {
-            return false;
-        }
-        for (pos, room) in self.rooms.iter() {
-            if let Some(other_room) = other.rooms.get(pos) {
-                if room != other_room || room.rotation != other_room.rotation {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
-        true
-    }
-}
-
-impl Eq for Castle {}
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Action {
@@ -60,7 +28,7 @@ pub enum Action {
 
 impl Castle {
     pub fn new(starting_room: Room) -> Castle {
-        let mut rooms = HashMap::new();
+        let mut rooms = BTreeMap::new();
         rooms.insert((0, 0), starting_room);
         Castle { rooms, damage: 0 }
     }
@@ -84,15 +52,9 @@ impl Castle {
         }
         if castle.damage as usize >= castle.rooms.len() {
             castle.damage -= castle.rooms.len() as u8;
-            castle.rooms = HashMap::new();
+            castle.rooms = BTreeMap::new();
         }
         castle
-    }
-    pub fn get_rooms(&self) -> &HashMap<Pos, Room> {
-        &self.rooms
-    }
-    pub fn get_damage(&self) -> u8 {
-        self.damage
     }
     pub fn get_links(&self) -> (u8, u8, u8, u8) {
         let mut diamond = 0;
@@ -547,6 +509,6 @@ mod tests {
         };
         assert!(result.is_ok());
         let new_castle = result.unwrap();
-        assert_eq!(new_castle.get_rooms().len(), 2);
+        assert_eq!(new_castle.rooms.len(), 2);
     }
 }
