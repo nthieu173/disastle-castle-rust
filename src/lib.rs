@@ -190,7 +190,7 @@ impl Castle {
         } else if let Some(_) = self
             .rooms
             .keys()
-            .filter(|p| self.room_num_connected(**p).unwrap() < 2)
+            .filter(|p| self.room_num_connected(**p).unwrap() <= 2)
             .find(|p| **p == pos)
         {
             let mut castle = self.clone();
