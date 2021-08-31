@@ -290,11 +290,11 @@ impl Castle {
             possible
         } else {
             for (pos, room) in self.rooms.iter() {
-                if self.room_num_connected(*pos).unwrap() < 2 && !room.throne {
+                if self.room_num_connected(*pos).unwrap() <= 2 && !room.throne {
                     possible.push(*pos);
                 }
             }
-            return possible;
+            possible
         }
     }
 }
