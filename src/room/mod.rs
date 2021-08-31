@@ -7,7 +7,7 @@ use std::{clone::Clone, convert::TryInto, fmt, hash::Hash};
 
 pub type Pos = (i8, i8);
 
-#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug, Ord, PartialOrd)]
 pub struct Room {
     pub name: String,
     pub throne: bool,

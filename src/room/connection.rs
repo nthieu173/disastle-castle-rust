@@ -2,7 +2,7 @@ use crate::error::CastleError;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
 pub enum Connection {
     None,
     Wild,
