@@ -12,13 +12,13 @@ use std::{
 
 type Result<T> = result::Result<T, CastleError>;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Castle {
     pub rooms: BTreeMap<Pos, Room>,
     pub damage: u8,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Ord, PartialOrd)]
 pub enum Action {
     Place(usize, Pos),
     Move(Pos, Pos),
