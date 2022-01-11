@@ -21,10 +21,11 @@ pub struct Castle {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Action {
-    Place(usize, Pos),
+    Place(Room, Pos),
     Move(Pos, Pos),
     Swap(Pos, Pos),
     Discard(Pos),
+    Damage(u8, u8, u8),
 }
 
 impl Castle {
@@ -35,27 +36,6 @@ impl Castle {
     }
     pub fn is_lost(&self) -> bool {
         self.damage as usize >= self.rooms.values().len() || self.rooms.values().all(|v| !v.throne)
-    }
-    pub fn deal_damage(&self, diamond_damage: u8, cross_damage: u8, moon_damage: u8) -> Castle {
-        let (diamond_link, cross_link, moon_link, wild_link) = self.get_links();
-        let mut castle = self.clone();
-        if diamond_damage > diamond_link {
-            castle.damage += diamond_damage - diamond_link;
-        }
-        if cross_damage > cross_link {
-            castle.damage += cross_damage - cross_link;
-        }
-        if moon_damage > moon_link {
-            castle.damage += moon_damage - moon_link;
-        }
-        if castle.damage > wild_link {
-            castle.damage -= wild_link;
-        }
-        if castle.damage as usize >= castle.rooms.len() {
-            castle.damage -= castle.rooms.len() as u8;
-            castle.rooms = BTreeMap::new();
-        }
-        castle
     }
     pub fn get_links(&self) -> (u8, u8, u8, u8) {
         let mut diamond = 0;
@@ -96,21 +76,21 @@ impl Castle {
 }
 
 impl Castle {
-    pub fn place_room(&self, room: Room, pos: Pos) -> Result<Castle> {
+    fn action_place(&self, room: Room, pos: Pos) -> Result<Castle> {
         if self.damage > 0 {
             return Err(CastleError::MustDiscard);
         }
         if self.rooms.contains_key(&pos) {
             return Err(CastleError::TakenPosition);
         }
-        if !self.can_place_room(&room, pos) {
+        if !self.can_place_room(room, pos) {
             return Err(CastleError::InvalidConnection);
         }
         let mut castle = self.clone();
         castle.rooms.insert(pos, room);
         Ok(castle)
     }
-    pub fn move_room(&self, from: Pos, to: Pos) -> Result<Castle> {
+    fn action_move(&self, from: Pos, to: Pos) -> Result<Castle> {
         if self.damage > 0 {
             return Err(CastleError::MustDiscard);
         }
@@ -125,7 +105,7 @@ impl Castle {
             }
             let mut castle = self.clone();
             let room = castle.rooms.remove(&from).unwrap();
-            if !castle.can_place_room(&room, to) {
+            if !castle.can_place_room(room, to) {
                 return Err(CastleError::InvalidConnection);
             }
             castle.rooms.insert(to, room);
@@ -134,7 +114,7 @@ impl Castle {
             Err(CastleError::EmptyPosition)
         }
     }
-    pub fn swap_room(&self, pos1: Pos, pos2: Pos) -> Result<Castle> {
+    fn action_swap(&self, pos1: Pos, pos2: Pos) -> Result<Castle> {
         if self.damage > 0 {
             return Err(CastleError::MustDiscard);
         }
@@ -147,14 +127,14 @@ impl Castle {
 
             // Checking valid swap for room1 as if room2 was already swapped there.
             castle.rooms.insert(pos1, room2);
-            if !castle.can_place_room(&room1, pos2) {
+            if !castle.can_place_room(room1, pos2) {
                 return Err(CastleError::InvalidConnection);
             }
             let room2 = castle.rooms.remove(&pos1).unwrap();
 
             castle.rooms.insert(pos2, room1);
             // Checking valid swap for room2 as if room1 was already swapped there.
-            if !castle.can_place_room(&room2, pos1) {
+            if !castle.can_place_room(room2, pos1) {
                 return Err(CastleError::InvalidConnection);
             }
             castle.rooms.insert(pos1, room2); // We passed both checks, so we can swap them.
@@ -163,7 +143,7 @@ impl Castle {
             Err(CastleError::EmptyPosition)
         }
     }
-    pub fn discard_room(&self, pos: Pos) -> Result<(Castle, Room)> {
+    fn action_discard(&self, pos: Pos) -> Result<Castle> {
         if self.damage == 0 {
             return Err(CastleError::NoDamage);
         }
@@ -181,9 +161,9 @@ impl Castle {
         if outer_pos.len() > 0 {
             if self.room_is_outer(pos).unwrap() {
                 let mut castle = self.clone();
-                let room = castle.rooms.remove(&pos).unwrap();
+                castle.rooms.remove(&pos).unwrap();
                 castle.damage -= 1;
-                return Ok((castle, room));
+                return Ok(castle);
             } else {
                 return Err(CastleError::NotOuterRoom);
             }
@@ -196,33 +176,63 @@ impl Castle {
         if nearly_outer_pos.len() > 0 {
             if self.room_num_connected(pos).unwrap() <= 2 {
                 let mut castle = self.clone();
-                let room = castle.rooms.remove(&pos).unwrap();
+                castle.rooms.remove(&pos).unwrap();
                 castle.damage -= 1;
-                return Ok((castle, room));
+                return Ok(castle);
             } else {
                 return Err(CastleError::NotNearlyOuterRoom);
             }
         }
         panic!("Impossible! There are no ways to discard rooms!");
     }
+    pub fn action_damage(&self, diamond_damage: u8, cross_damage: u8, moon_damage: u8) -> Castle {
+        let (diamond_link, cross_link, moon_link, wild_link) = self.get_links();
+        let mut castle = self.clone();
+        if diamond_damage > diamond_link {
+            castle.damage += diamond_damage - diamond_link;
+        }
+        if cross_damage > cross_link {
+            castle.damage += cross_damage - cross_link;
+        }
+        if moon_damage > moon_link {
+            castle.damage += moon_damage - moon_link;
+        }
+        if castle.damage > wild_link {
+            castle.damage -= wild_link;
+        }
+        if castle.damage as usize >= castle.rooms.len() {
+            castle.damage -= castle.rooms.len() as u8;
+            castle.rooms = BTreeMap::new();
+        }
+        castle
+    }
+    pub fn apply(&self, action: Action) -> Result<Castle> {
+        match action {
+            Action::Place(room, pos) => self.action_place(room, pos),
+            Action::Move(from, to) => self.action_move(from, to),
+            Action::Swap(pos1, pos2) => self.action_swap(pos1, pos2),
+            Action::Discard(pos) => self.action_discard(pos),
+            Action::Damage(diamond, cross, moon) => Ok(self.action_damage(diamond, cross, moon)),
+        }
+    }
     pub fn possible_actions(&self, shop: &Vec<Room>) -> Vec<Action> {
         if self.damage > 0 {
             return self
-                .possible_discards()
+                .all_possible_discards()
                 .into_iter()
                 .map(|pos| Action::Discard(pos))
                 .collect();
         }
-        self.possible_placements(shop)
+        self.all_possible_placements(shop)
             .into_iter()
-            .map(|(index, pos)| Action::Place(index, pos))
+            .map(|(index, pos)| Action::Place(shop[index], pos))
             .chain(
-                self.possible_moves()
+                self.all_possible_moves()
                     .into_iter()
                     .map(|(from, to)| Action::Move(from, to)),
             )
             .chain(
-                self.possible_swaps()
+                self.all_possible_swaps()
                     .into_iter()
                     .map(|(pos1, pos2)| Action::Swap(pos1, pos2)),
             )
@@ -237,47 +247,43 @@ impl Castle {
 }
 
 impl Castle {
-    fn possible_placements(&self, shop: &Vec<Room>) -> Vec<(usize, Pos)> {
+    pub fn all_possible_placements(&self, shop: &Vec<Room>) -> Vec<(usize, Pos)> {
         let mut possible = Vec::new();
         for (i, room) in shop.iter().enumerate() {
-            for pos in self.placable_positions(room) {
+            for pos in self.possible_placements(*room) {
                 possible.push((i, pos));
             }
         }
         possible
     }
-    fn possible_moves(&self) -> Vec<(Pos, Pos)> {
+    pub fn all_possible_moves(&self) -> Vec<(Pos, Pos)> {
         let mut possible = Vec::new();
-        let mut castle = self.clone();
         for from in self.rooms.keys() {
-            if self.room_is_outer(*from).unwrap() {
-                let room = castle.rooms.remove(from).unwrap();
-                for to in castle.placable_positions(&room) {
-                    if *from != to {
-                        possible.push((*from, to));
-                    }
-                }
-                castle.rooms.insert(*from, room);
-            }
+            possible.append(
+                &mut self
+                    .possible_moves(*from)
+                    .into_iter()
+                    .map(|to| (*from, to))
+                    .collect(),
+            );
         }
         possible
     }
-    fn possible_swaps(&self) -> Vec<(Pos, Pos)> {
+    pub fn all_possible_swaps(&self) -> Vec<(Pos, Pos)> {
         // Since the number of rooms is limited, we can just brute force and check all possible swaps
-        let mut possible = Vec::new();
-        for (pos1, room1) in self.rooms.iter() {
-            for (pos2, room2) in self.rooms.iter() {
-                if pos1 != pos2
-                    && self.can_place_room(room1, *pos2)
-                    && self.can_place_room(room2, *pos1)
-                {
-                    possible.push((*pos1, *pos2));
-                }
-            }
+        let mut possible: Vec<(Pos, Pos)> = Vec::new();
+        for pos1 in self.rooms.keys() {
+            possible.append(
+                &mut self
+                    .possible_swaps(*pos1)
+                    .into_iter()
+                    .map(|pos2| (*pos1, pos2))
+                    .collect(),
+            );
         }
         possible
     }
-    fn possible_discards(&self) -> Vec<Pos> {
+    pub fn all_possible_discards(&self) -> Vec<Pos> {
         if self.is_lost() {
             return Vec::new();
         }
@@ -302,10 +308,7 @@ impl Castle {
             possible
         }
     }
-}
-
-impl Castle {
-    fn placable_positions(&self, room: &Room) -> Vec<Pos> {
+    pub fn possible_placements(&self, room: Room) -> Vec<Pos> {
         let mut placable = HashSet::new();
         for pos in self.rooms.keys() {
             for con_pos in connecting(*pos) {
@@ -316,10 +319,45 @@ impl Castle {
         }
         placable.into_iter().collect()
     }
+    pub fn possible_moves(&self, from: Pos) -> Vec<Pos> {
+        let mut castle = self.clone();
+        let mut possible = Vec::new();
+        if let Ok(room_is_outer) = self.room_is_outer(from) {
+            if room_is_outer {
+                let room = castle.rooms.remove(&from).unwrap();
+                for to in castle.possible_placements(room) {
+                    if from != to {
+                        possible.push(to);
+                    }
+                }
+                castle.rooms.insert(from, room);
+            }
+        }
+        possible
+    }
+    pub fn possible_swaps(&self, from: Pos) -> Vec<Pos> {
+        // Since the number of rooms is limited, we can just brute force and check all possible swaps
+        let mut possible = Vec::new();
+        let pos1 = &from;
+        if let Some(room1) = self.rooms.get(&from) {
+            for (pos2, room2) in self.rooms.iter() {
+                if pos1 != pos2
+                    && self.can_place_room(*room1, *pos2)
+                    && self.can_place_room(*room2, *pos1)
+                {
+                    possible.push(*pos2);
+                }
+            }
+        }
+        possible
+    }
+}
+
+impl Castle {
     /*
      * Does not check for already existing room at position
      */
-    fn can_place_room(&self, room: &Room, pos: Pos) -> bool {
+    fn can_place_room(&self, room: Room, pos: Pos) -> bool {
         let mut count = 0;
         let mut connect = true;
         for (i, con_pos) in connecting(pos).iter().enumerate() {
@@ -398,8 +436,8 @@ mod tests {
     fn test_new() {
         let throne: Room = ron::from_str(
             "Room(
+                id: 0,
                 throne: true,
-                name: \"Throne Room (White)\",
                 treasure: 0,
                 rotation: 0,
                 connections: (Wild, Wild, Wild, Wild)
@@ -413,8 +451,8 @@ mod tests {
     fn test_possible_actions() {
         let throne: Room = ron::from_str(
             "Room(
+                id: 0,
                 throne: true,
-                name: \"Throne Room (White)\",
                 treasure: 0,
                 rotation: 0,
                 connections: (Wild, Wild, Wild, Wild)
@@ -425,30 +463,30 @@ mod tests {
         let shop: Vec<Room> = ron::from_str(
             "[
             Room(
+                id: 1,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (None, None, None, Cross(false))
             ),
             Room(
+                id: 2,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (None, Diamond(false), None, None)
             ),
             Room(
+                id: 3,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (None, None, Moon(false), None)
             ),
             Room(
+                id: 4,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (Cross(false), None, None, None)
             ),
@@ -464,8 +502,8 @@ mod tests {
     fn test_place_action() {
         let throne: Room = ron::from_str(
             "Room(
+                id: 0,
                 throne: true,
-                name: \"Throne Room (White)\",
                 treasure: 0,
                 rotation: 0,
                 connections: (Wild, Wild, Wild, Wild)
@@ -476,30 +514,30 @@ mod tests {
         let shop: Vec<Room> = ron::from_str(
             "[
             Room(
+                id: 1,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (None, None, None, Cross(false))
             ),
             Room(
+                id: 2,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (None, Diamond(false), None, None)
             ),
             Room(
+                id: 3,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (None, None, Moon(false), None)
             ),
             Room(
+                id: 4,
                 throne: false,
                 treasure: 1,
-                name: \"Small Vault\",
                 rotation: 0,
                 connections: (Cross(false), None, None, None)
             ),
@@ -509,10 +547,7 @@ mod tests {
         let shop: Vec<Room> = shop.into_iter().collect();
         let actions = castle.possible_actions(&shop);
         let sample_action = actions[1];
-        let result = match sample_action {
-            Action::Place(index, pos) => castle.place_room(shop[index].clone(), pos),
-            _ => unreachable!(),
-        };
+        let result = castle.apply(sample_action);
         assert!(result.is_ok());
         let new_castle = result.unwrap();
         assert_eq!(new_castle.rooms.len(), 2);
