@@ -21,7 +21,7 @@ impl fmt::Display for CastleError {
             CastleError::InvalidPosition => write!(f, "Cannot select the same position as both the source and destination of a move or swap."),
             CastleError::NotOuterRoom => write!(f, "Room cannot be moved or discarded because it is not an outer room."),
             CastleError::NotNearlyOuterRoom => write!(f, "Room cannot be discarded because it is has too much connections."),
-            CastleError::MustDiscard => write!(f, "Rooms must be discarded to match the damage first."),
+            CastleError::MustDiscard => write!(f, "Rooms must be discarded to match the damage."),
             CastleError::NoDamage => write!(f, "Room cannot be discarded because there is no damage."),
         }
     }
