@@ -1,0 +1,113 @@
+0,Throne Room,n,c,n,d
+1,Throne Room (White),w,w,w,w
+2,Throne Room (Green),w,w,w,w
+3,Throne Room (Purple),w,w,w,w
+4,Thone Room (Red),w,w,w,w
+5,Throne Room (Turquoise),w,w,w,w
+6,Throne Room (Pink),w,w,w,w
+7,Throne Room (Orange),w,w,w,w
+8,Throne Room (Black),w,w,w,w
+9,Throne Room (Yellow),w,w,w,w
+10,Throne Room (Blue),w,w,w,w
+11,Hallway,n,c,n,d
+12,Hallway,n,m,n,c
+13,Hallway,n,c,n,c
+14,Hallway,n,m,n,c
+15,Hallway,n,m,n,d
+16,Hallway,n,m,d,m
+17,Hallway,n,d,n,m
+18,Hallway,n,m,n,m
+19,Staircase,c,n,m,n
+20,Starcase,d,n,m,n
+21,Staircase,d,n,m,n
+22,Staircase,c,n,d,n
+23,Staircase,c,n,c,n
+24,Staircase,m,n,m,n
+25,Staircase,m,n,c,n
+26,Staircase,m,n,d,n
+27,Corridor,n,n,d,m
+28,Corridor,c,d,n,n
+29,Corridor,c,n,n,c
+30,Corridor,n,n,c,d
+31,Corridor,n,d,m,n
+32,Corridor,c,n,n,d
+33,Black Market,d,D,n,n
+34,Divination Chamber,n,n,C,n
+35,Merchants Guild,n,D,d,M
+36,Wormhole Generator,M,d,M,n
+37,Doomsayer,M,n,m,n
+38,Antigravity Cannon,C,n,M,d
+39,Time Machine,D,n,n,m
+40,Soothsayer,D,c,n,n
+41,Architect,n,C,n,d
+42,Interior Decorator,n,n,M,m
+43,Treasury,m,D,C,M
+44,Market,D,c,m,C
+45,Energy Core,M,M,D,M
+46,Gravity Generator,M,C,C,d
+47,Reinforced Walls,M,C,C,D
+48,Gravitational Anchor,n,D,n,D
+49,Tavern,D,n,D,C
+50,Echo Chamber,D,d,c,m
+51,Armorer,n,C,n,D
+52,Generator,n,n,M,n
+53,Generator,n,C,n,n
+54,Safe Room,D,C,n,c
+55,Bunker,D,C,D,C
+56,Rooms With Legs,m,D,n,c
+57,Spinning Chamber,d,c,m,m
+58,Wraping Chamber,n,d,c,m
+59,Imposter,n,n,m,c
+60,Commander's Chamber,C,D,C,C
+61,Engineer's Workshop,n,M,c,D
+62,Pilot's Quarter,m,M,n,D
+63,Candy Shop,M,n,n,c
+64,Swimming Pool,n,d,C,n
+65,Petting Zoo,d,M,n,n
+66,Movie Theatre,n,n,c,M
+67,Nuclear Reactor,n,D,n,D
+68,Mercenery,n,D,C,n
+69,Mercenery,C,n,C,n
+70,Mercenery,M,n,n,D
+71,Mercenery,n,D,n,C
+72,Giant Fan,D,M,n,d
+73,Giant Fan,d,C,D,n
+74,Construction Crew,C,M,c,n
+75,Rocket Engineer,M,n,n,d
+76,Rocket Engineer,n,D,d,n
+77,Shuttle,M,m,n,n
+78,Shuttle,n,n,M,c
+79,Warp Cannon,n,M,n,C
+80,Warp Cannon,D,n,D,n
+81,Warp Cannon,n,n,M,D
+82,Hydraulic Arm,n,D,D,n
+83,Hydraulic Arm,D,n,n,D
+84,Watch Tower,m,n,D,n
+85,Homeowners Association,C,d,C,d
+86,Unhappy Neighbor,n,M,c,C
+87,Disco,c,C,d,M
+88,Big Vault,n,C,M,d,3
+89,Big Vault,d,C,n,M,3
+90,Big Vault,d,n,M,C,3
+91,Big Vault,C,M,d,n,3
+92,Large Vault,m,M,M,D,5
+93,Large Vault,C,m,D,C,5
+94,Medium Vault,n,n,D,m,2
+95,Medium Vault,n,c,M,n,2
+96,Medium Vault,d,n,D,n,2
+97,Medium Vault,C,m,n,n,2
+98,Medium Vault,M,n,n,m,2
+99,Medium Vault,n,m,n,D,2
+100,Small Vault,n,n,n,c,1
+101,Small Vault,n,d,n,n,1
+102,Small Vault,n,n,m,n,1
+103,Small Vault,c,n,n,n,1
+104,Briber's Vault,D,n,n,c,3
+105,Briber's Vault,D,m,n,n,3
+106,Cold Vault,M,m,D,C,7
+107,Dynamic Vault,M,C,D,M
+108,Entropic Vault,D,c,C,M,8
+109,Candy Vault,C,M,M,n,5
+110,Lonely Vault,c,n,C,n
+111,Lonely Vault,n,m,n,M
+112,Nuclear Vault,C,n,d,M
